@@ -179,7 +179,7 @@ const PatientDashboardScreen: React.FC = () => {
 
     const handleQuickAction = useCallback((action: QuickAction): void => {
         if (action.id === 'BOOK_APPOINTMENT') {
-            navigation.navigate('DoctorList');
+            navigation.navigate('PatientFlow', { screen: 'DoctorList' });
             return;
         }
 
