@@ -1,43 +1,83 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import DoctorDashboardScreen from './DoctorDashboardScreen';
+import PatientDashboardScreen from './PatientDashboardScreen';
 
 const HomeScreen: React.FC = () => {
     const { userInfo, logout } = useAuth();
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.greeting}>Welcome back,</Text>
-                <Text style={styles.name}>{userInfo?.fullName}</Text>
-                <View style={styles.roleBadge}>
-                    <Text style={styles.roleText}>{userInfo?.role}</Text>
-                </View>
-            </View>
+    if (!userInfo) {
+        return (
+            <View style={styles.fallbackContainer}>
+                <Text style={styles.fallbackTitle}>Session Expired</Text>
 
-            <View style={styles.content}>
-                <Text style={styles.infoText}>Email: {userInfo?.email}</Text>
-                <Text style={styles.infoText}>ID: {userInfo?.id}</Text>
+                <Text style={styles.fallbackSubtitle}>
+                    We could not load your profile. Please log in again.
+                </Text>
+
+                <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                    <Text style={styles.logoutButtonText}>Back to Login</Text>
+                </TouchableOpacity>
             </View>
+        );
+    }
+
+    if (userInfo.role === 'DOCTOR') {
+        return <DoctorDashboardScreen />;
+    }
+
+    if (userInfo.role === 'PATIENT') {
+        return <PatientDashboardScreen />;
+    }
+
+    return (
+        <View style={styles.fallbackContainer}>
+            <Text style={styles.fallbackTitle}>Admin Dashboard</Text>
+
+            <Text style={styles.fallbackSubtitle}>
+                Admin dashboard will be implemented in a later phase.
+            </Text>
 
             <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                <Text style={styles.logoutText}>Logout</Text>
+                <Text style={styles.logoutButtonText}>Logout</Text>
             </TouchableOpacity>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F8FAFC', padding: 24 },
-    header: { marginTop: 60, marginBottom: 40 },
-    greeting: { fontSize: 16, color: '#64748B', marginBottom: 4 },
-    name: { fontSize: 28, fontWeight: '800', color: '#0F172A', marginBottom: 12 },
-    roleBadge: { backgroundColor: '#DBEAFE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'flex-start' },
-    roleText: { color: '#1D4ED8', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-    content: { flex: 1 },
-    infoText: { fontSize: 14, color: '#475569', marginBottom: 8, fontFamily: 'monospace' },
-    logoutButton: { backgroundColor: '#EF4444', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginBottom: 24 },
-    logoutText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+    fallbackContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        padding: 24,
+    },
+    fallbackTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#0F172A',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    fallbackSubtitle: {
+        fontSize: 14,
+        color: '#64748B',
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    logoutButton: {
+        backgroundColor: '#EF4444',
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+    },
+    logoutButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '600',
+    },
 });
 
 export default HomeScreen;
