@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 
 // ==========================================
 // AUTH STACK
@@ -21,8 +22,12 @@ export type AppointmentDetailRouteParams = {
     appointmentId: string;
 };
 
+export type DoctorAppointmentDetailRouteParams = {
+    appointmentId: string;
+};
+
 // ==========================================
-// PATIENT / APP STACK
+// PATIENT STACK
 // ==========================================
 
 export type PatientStackParamList = {
@@ -33,28 +38,36 @@ export type PatientStackParamList = {
     AppointmentDetail: AppointmentDetailRouteParams;
 };
 
-export type AppStackParamList = PatientStackParamList;
+// ==========================================
+// DOCTOR STACK (NEW)
+// ==========================================
+
+export type DoctorStackParamList = {
+    DoctorDashboard: undefined;
+    DoctorAppointmentList: undefined;
+    DoctorAppointmentDetail: DoctorAppointmentDetailRouteParams;
+};
+
+// ==========================================
+// APP STACK (PARENT)
+// ==========================================
+
+export type AppStackParamList = {
+    PatientFlow: NavigatorScreenParams<PatientStackParamList> | undefined;
+    DoctorFlow: NavigatorScreenParams<DoctorStackParamList> | undefined;
+};
 
 // ==========================================
 // SCREEN PROPS
 // ==========================================
 
-export type DoctorListScreenProps = NativeStackScreenProps<
-    AppStackParamList,
-    'DoctorList'
->;
+// Patient Props
+export type DoctorListScreenProps = NativeStackScreenProps<PatientStackParamList, 'DoctorList'>;
+export type DoctorDetailScreenProps = NativeStackScreenProps<PatientStackParamList, 'DoctorDetail'>;
+export type AppointmentListScreenProps = NativeStackScreenProps<PatientStackParamList, 'AppointmentList'>;
+export type AppointmentDetailScreenProps = NativeStackScreenProps<PatientStackParamList, 'AppointmentDetail'>;
 
-export type DoctorDetailScreenProps = NativeStackScreenProps<
-    AppStackParamList,
-    'DoctorDetail'
->;
-
-export type AppointmentListScreenProps = NativeStackScreenProps<
-    AppStackParamList,
-    'AppointmentList'
->;
-
-export type AppointmentDetailScreenProps = NativeStackScreenProps<
-    AppStackParamList,
-    'AppointmentDetail'
->;
+// Doctor Props
+export type DoctorDashboardScreenProps = NativeStackScreenProps<DoctorStackParamList, 'DoctorDashboard'>;
+export type DoctorAppointmentListScreenProps = NativeStackScreenProps<DoctorStackParamList, 'DoctorAppointmentList'>;
+export type DoctorAppointmentDetailScreenProps = NativeStackScreenProps<DoctorStackParamList, 'DoctorAppointmentDetail'>;
