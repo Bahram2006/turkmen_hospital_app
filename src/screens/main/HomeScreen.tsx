@@ -35,8 +35,9 @@ const HomeScreen: React.FC = () => {
         return <DoctorDashboardScreen />;
     }
 
+    // HomeScreen.tsx içinde 39-njy setir:
     if (userInfo.role === 'PATIENT') {
-        return <PatientDashboardScreen onNavigateToDoctorList={handleNavigateToDoctorList} />;
+        return <PatientDashboardScreen />;
     }
 
     return (

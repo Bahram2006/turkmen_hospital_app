@@ -178,9 +178,21 @@ const PatientDashboardScreen: React.FC = () => {
     const patientName = userInfo?.fullName ?? 'Patient';
 
     const handleQuickAction = useCallback((action: QuickAction): void => {
-        // TODO: Replace with actual navigation when routes are implemented.
-        console.info(`Navigate to: ${action.id}`);
-    }, []);
+        if (action.id === 'BOOK_APPOINTMENT') {
+            navigation.navigate('DoctorList');
+            return;
+        }
+
+        if (action.id === 'MY_APPOINTMENTS') {
+            // Phase 4-de belleniler
+            return;
+        }
+
+        if (action.id === 'MEDICAL_RECORDS') {
+            // Phase 6-da belleniler
+            return;
+        }
+    }, [navigation]);
 
     const renderQuickAction = useCallback(
         (action: QuickAction): React.ReactElement => {
