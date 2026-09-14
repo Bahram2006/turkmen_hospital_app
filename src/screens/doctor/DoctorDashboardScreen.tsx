@@ -10,6 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { DoctorDashboardScreenProps } from '../../navigation/navigation.types';
 import { MOCK_APPOINTMENTS } from '../../data/mockAppointments';
+import { useAppointments } from '../../context/AppointmentContext';
+import { useAuth } from '../../context/AuthContext';
 
 // ==========================================
 // COMPONENT
@@ -19,30 +21,22 @@ const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
     navigation,
 }) => {
     const [isAvailable, setIsAvailable] = useState<boolean>(true);
+    const { userInfo } = useAuth();
+    const { getDoctorAppointments } = useAppointments();
 
     // Calculate stats based on mock data (simulating real-time state)
     const stats = useMemo(() => {
+        if (!userInfo) return { totalToday: 0, pendingRequests: 0, completedConsultations: 0 };
+
+        const myAppts = getDoctorAppointments(userInfo.id);
         const todayStr = new Date().toISOString().split('T')[0];
 
-        const todaysAppointments = MOCK_APPOINTMENTS.filter(
-            (apt) => apt.appointmentDate.startsWith(todayStr) &&
-                apt.status !== 'CANCELLED'
-        );
-
-        const pendingRequests = MOCK_APPOINTMENTS.filter(
-            (apt) => apt.status === 'PENDING'
-        ).length;
-
-        const completedConsultations = MOCK_APPOINTMENTS.filter(
-            (apt) => apt.status === 'COMPLETED'
-        ).length;
-
         return {
-            totalToday: todaysAppointments.length || 3, // Fallback for mock visibility
-            pendingRequests,
-            completedConsultations,
+            totalToday: myAppts.filter(a => a.appointmentDate.startsWith(todayStr) && a.status === 'CONFIRMED').length,
+            pendingRequests: myAppts.filter(a => a.status === 'PENDING').length,
+            completedConsultations: myAppts.filter(a => a.status === 'COMPLETED').length,
         };
-    }, []);
+    }, [getDoctorAppointments, userInfo]);
 
     const handleToggleAvailability = (value: boolean): void => {
         // TODO: Call API to update doctor availability in DB
