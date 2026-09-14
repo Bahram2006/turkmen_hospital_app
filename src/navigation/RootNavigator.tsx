@@ -15,6 +15,7 @@ import DoctorListScreen from '../screens/patient/DoctorListScreen';
 import DoctorDetailScreen from '../screens/patient/DoctorDetailScreen';
 import AppointmentListScreen from '../screens/patient/AppointmentListScreen';
 import AppointmentDetailScreen from '../screens/patient/AppointmentDetailScreen';
+import BookingScreen from '../screens/patient/BookingScreen';
 
 // Doctor Flow Screens
 import DoctorDashboardScreen from '../screens/doctor/DoctorDashboardScreen';
@@ -52,6 +53,7 @@ const PatientNavigator: React.FC = () => (
         <PatientStack.Screen name="Home" component={PatientDashboardScreen} />
         <PatientStack.Screen name="DoctorList" component={DoctorListScreen} />
         <PatientStack.Screen name="DoctorDetail" component={DoctorDetailScreen} />
+        <PatientStack.Screen name="Booking" component={BookingScreen} />
         <PatientStack.Screen name="AppointmentList" component={AppointmentListScreen} />
         <PatientStack.Screen name="AppointmentDetail" component={AppointmentDetailScreen} />
     </PatientStack.Navigator>

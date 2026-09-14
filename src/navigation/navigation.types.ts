@@ -30,13 +30,18 @@ export type DoctorAppointmentDetailRouteParams = {
 // PATIENT STACK
 // ==========================================
 
+// Add to PatientStackParamList
 export type PatientStackParamList = {
     Home: undefined;
     DoctorList: undefined;
     DoctorDetail: DoctorDetailRouteParams;
+    Booking: DoctorDetailRouteParams; // Reuses DoctorDetailRouteParams since we need doctorId
     AppointmentList: undefined;
     AppointmentDetail: AppointmentDetailRouteParams;
 };
+
+// Add Screen Props
+export type BookingScreenProps = NativeStackScreenProps<PatientStackParamList, 'Booking'>;
 
 // ==========================================
 // DOCTOR STACK (NEW)
