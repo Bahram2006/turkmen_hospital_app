@@ -1,44 +1,53 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import { useAuth } from '../context/AuthContext';
 
-// Import Screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 
-// ==========================================
-// NAVIGATION TYPES
-// ==========================================
+import DoctorListScreen from '../screens/patient/DoctorListScreen';
+import DoctorDetailScreen from '../screens/patient/DoctorDetailScreen';
 
-export type AuthStackParamList = {
-    Login: undefined;
-    Register: undefined;
-};
+import type {
+    AppStackParamList,
+    AuthStackParamList,
+} from './navigation.types';
 
-export type AppStackParamList = {
-    Home: undefined;
-};
+// ==========================================
+// STACKS
+// ==========================================
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
 
 // ==========================================
-// STACK COMPONENTS
+// AUTH NAVIGATOR
 // ==========================================
 
-const AuthNavigator: React.FC = () => (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-        <AuthStack.Screen name="Login" component={LoginScreen} />
-        <AuthStack.Screen name="Register" component={RegisterScreen} />
-    </AuthStack.Navigator>
-);
+const AuthNavigator: React.FC = () => {
+    return (
+        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+            <AuthStack.Screen name="Login" component={LoginScreen} />
+            <AuthStack.Screen name="Register" component={RegisterScreen} />
+        </AuthStack.Navigator>
+    );
+};
 
-const AppNavigator: React.FC = () => (
-    <AppStack.Navigator screenOptions={{ headerShown: false }}>
-        <AppStack.Screen name="Home" component={HomeScreen} />
-    </AppStack.Navigator>
-);
+// ==========================================
+// APP NAVIGATOR
+// ==========================================
+
+const AppNavigator: React.FC = () => {
+    return (
+        <AppStack.Navigator screenOptions={{ headerShown: false }}>
+            <AppStack.Screen name="Home" component={HomeScreen} />
+            <AppStack.Screen name="DoctorList" component={DoctorListScreen} />
+            <AppStack.Screen name="DoctorDetail" component={DoctorDetailScreen} />
+        </AppStack.Navigator>
+    );
+};
 
 // ==========================================
 // ROOT NAVIGATOR
@@ -47,7 +56,6 @@ const AppNavigator: React.FC = () => (
 const RootNavigator: React.FC = () => {
     const { userToken } = useAuth();
 
-    // Conditional Rendering based on Auth State
     return userToken ? <AppNavigator /> : <AuthNavigator />;
 };
 
