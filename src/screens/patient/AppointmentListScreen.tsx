@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MOCK_APPOINTMENTS } from '../../data/mockAppointments';
+import { useAppointments } from '../../context/AppointmentContext';
+import { useAuth } from '../../context/AuthContext';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
 import { APPOINTMENT_STATUS_THEME } from '../../types/appointment';
 import type { AppointmentListScreenProps } from '../../navigation/navigation.types';
@@ -49,31 +50,45 @@ const isUpcoming = (isoDate: string): boolean => {
 const AppointmentListScreen: React.FC<AppointmentListScreenProps> = ({
     navigation,
 }) => {
+    const { userInfo } = useAuth();
+    const { getPatientAppointments, updateAppointmentStatus } = useAppointments();
     const [activeTab, setActiveTab] = useState<TabType>('UPCOMING');
 
+    const myAppointments = useMemo(() => {
+        if (!userInfo) return [];
+        return getPatientAppointments(userInfo.id);
+    }, [getPatientAppointments, userInfo]);
+
     const filteredAppointments = useMemo<Appointment[]>(() => {
-        return MOCK_APPOINTMENTS.filter((appointment) => {
-            const upcoming = isUpcoming(appointment.appointmentDate);
-
+        return myAppointments.filter((appointment) => {
             if (activeTab === 'UPCOMING') {
-                // Upcoming includes future dates AND today's appointments that aren't completed/cancelled
-                return upcoming && appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED';
+                return (
+                    appointment.status === 'PENDING' ||
+                    appointment.status === 'CONFIRMED'
+                );
             }
-
-            // Past includes past dates OR any completed/cancelled appointments
-            return !upcoming || appointment.status === 'COMPLETED' || appointment.status === 'CANCELLED';
-        }).sort((a, b) => {
-            const dateA = new Date(a.appointmentDate).getTime();
-            const dateB = new Date(b.appointmentDate).getTime();
-            return activeTab === 'UPCOMING' ? dateA - dateB : dateB - dateA;
+            return (
+                appointment.status === 'COMPLETED' ||
+                appointment.status === 'CANCELLED'
+            );
         });
-    }, [activeTab]);
+    }, [myAppointments, activeTab]);
 
     const handleViewDetails = (appointmentId: string): void => {
         navigation.navigate('AppointmentDetail', { appointmentId });
     };
 
     const renderAppointment: ListRenderItem<Appointment> = ({ item }) => {
+        {
+            (item.status === 'PENDING' || item.status === 'CONFIRMED') && (
+                <Pressable
+                    style={styles.cancelButton}
+                    onPress={() => updateAppointmentStatus(item.id, 'CANCELLED')}
+                >
+                    <Text style={styles.cancelButtonText}>Cancel Appointment</Text>
+                </Pressable>
+            )
+        }
         const statusTheme = APPOINTMENT_STATUS_THEME[item.status];
 
         return (
@@ -196,6 +211,19 @@ const AppointmentListScreen: React.FC<AppointmentListScreenProps> = ({
 // ==========================================
 
 const styles = StyleSheet.create({
+    cancelButton: {
+        marginTop: 10,
+        backgroundColor: '#FEE2E2',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+    },
+    cancelButtonText: {
+        color: '#DC2626',
+        fontSize: 12,
+        fontWeight: '600',
+    },
     safeArea: {
         flex: 1,
         backgroundColor: '#F8FAFC',
