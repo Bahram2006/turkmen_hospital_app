@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { DoctorAppointmentListScreenProps } from '../../navigation/navigation.types';
-import { MOCK_APPOINTMENTS } from '../../data/mockAppointments';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
 import { APPOINTMENT_STATUS_THEME } from '../../types/appointment';
+import { useAppointments } from '../../context/AppointmentContext';
+import { useAuth } from '../../context/AuthContext';
 
 // ==========================================
 // TYPES
@@ -60,7 +61,13 @@ const DoctorAppointmentListScreen: React.FC<DoctorAppointmentListScreenProps> = 
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('TODAY');
     // Local state to simulate optimistic updates for accept/reject
-    const [appointments, setAppointments] = useState<Appointment[]>([...MOCK_APPOINTMENTS]);
+    const { userInfo } = useAuth();
+    const { getDoctorAppointments, updateAppointmentStatus } = useAppointments();
+
+    const appointments = useMemo(() => {
+        if (!userInfo) return [];
+        return getDoctorAppointments(userInfo.id);
+    }, [getDoctorAppointments, userInfo]);
 
     const filteredAppointments = useMemo<Appointment[]>(() => {
         return appointments.filter((apt) => {
@@ -89,20 +96,13 @@ const DoctorAppointmentListScreen: React.FC<DoctorAppointmentListScreenProps> = 
                         style: newStatus === 'CANCELLED' ? 'destructive' : 'default',
                         onPress: () => {
                             // Optimistic UI Update
-                            setAppointments((prev) =>
-                                prev.map((apt) =>
-                                    apt.id === appointmentId ? { ...apt, status: newStatus } : apt
-                                )
-                            );
-
-                            // TODO: Call API to persist status change
-                            // await api.patch(`/appointments/${appointmentId}/status`, { status: newStatus });
+                            updateAppointmentStatus(appointmentId, newStatus);
                         },
                     },
                 ]
             );
         },
-        []
+        [updateAppointmentStatus]
     );
 
     const renderAppointment: ListRenderItem<Appointment> = ({ item }) => {
@@ -211,12 +211,19 @@ const DoctorAppointmentListScreen: React.FC<DoctorAppointmentListScreenProps> = 
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyStateTitle}>No appointments found</Text>
+                        <Text style={styles.emptyStateIcon}>📅</Text>
+                        <Text style={styles.emptyStateTitle}>No appointments yet</Text>
                         <Text style={styles.emptyStateSubtitle}>
-                            {activeTab === 'TODAY' && "You have no appointments scheduled for today."}
-                            {activeTab === 'UPCOMING' && "No upcoming appointments scheduled."}
-                            {activeTab === 'COMPLETED' && "No history available yet."}
+                            Book your first consultation to get started.
                         </Text>
+                        {activeTab === 'UPCOMING' && (
+                            <Pressable
+                                style={styles.emptyStateButton}
+                                onPress={() => navigation.navigate('DoctorDashboard')}
+                            >
+                                <Text style={styles.emptyStateButtonText}>Find a Doctor</Text>
+                            </Pressable>
+                        )}
                     </View>
                 }
             />
@@ -232,6 +239,23 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: '#F8FAFC',
+    },
+    emptyStateIcon: {
+        fontSize: 36,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    emptyStateButton: {
+        marginTop: 16,
+        backgroundColor: '#2563EB',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 10,
+    },
+    emptyStateButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 14,
     },
     header: {
         paddingHorizontal: 20,
