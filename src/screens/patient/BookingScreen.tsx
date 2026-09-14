@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PatientStackParamList } from '../../navigation/navigation.types';
 import { useAppointments } from '../../context/AppointmentContext';
-import { generateTimeSlots } from '../../utils/timeSlots';
+import { generateTimeSlots } from '../../utils/timeslots';
 import { MOCK_DOCTORS } from '../../data/mockDoctors';
 
 type BookingScreenProps = NativeStackScreenProps<PatientStackParamList, 'Booking'>;
