@@ -12,7 +12,7 @@ const HomeScreen: React.FC = () => {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
     const handleNavigateToDoctorList = useCallback(() => {
-        navigation.navigate('DoctorList');
+        navigation.navigate('PatientFlow', { screen: 'DoctorList' });
     }, [navigation]);
 
     if (!userInfo) {
