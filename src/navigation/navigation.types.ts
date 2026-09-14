@@ -10,26 +10,29 @@ export type AuthStackParamList = {
 };
 
 // ==========================================
-// PATIENT / APP STACK
+// ROUTE PARAMS
 // ==========================================
 
 export type DoctorDetailRouteParams = {
     doctorId: string;
 };
 
+export type AppointmentDetailRouteParams = {
+    appointmentId: string;
+};
+
+// ==========================================
+// PATIENT / APP STACK
+// ==========================================
+
 export type PatientStackParamList = {
     Home: undefined;
     DoctorList: undefined;
     DoctorDetail: DoctorDetailRouteParams;
+    AppointmentList: undefined;
+    AppointmentDetail: AppointmentDetailRouteParams;
 };
 
-/**
- * For now, AppStack and PatientStack are identical.
- *
- * Later, if you split Doctor, Admin, or Patient flows into nested stacks,
- * AppStackParamList can become the parent stack param list while
- * PatientStackParamList remains scoped to the patient flow.
- */
 export type AppStackParamList = PatientStackParamList;
 
 // ==========================================
@@ -44,4 +47,14 @@ export type DoctorListScreenProps = NativeStackScreenProps<
 export type DoctorDetailScreenProps = NativeStackScreenProps<
     AppStackParamList,
     'DoctorDetail'
+>;
+
+export type AppointmentListScreenProps = NativeStackScreenProps<
+    AppStackParamList,
+    'AppointmentList'
+>;
+
+export type AppointmentDetailScreenProps = NativeStackScreenProps<
+    AppStackParamList,
+    'AppointmentDetail'
 >;

@@ -9,6 +9,8 @@ import HomeScreen from '../screens/main/HomeScreen';
 
 import DoctorListScreen from '../screens/patient/DoctorListScreen';
 import DoctorDetailScreen from '../screens/patient/DoctorDetailScreen';
+import AppointmentListScreen from '../screens/patient/AppointmentListScreen';
+import AppointmentDetailScreen from '../screens/patient/AppointmentDetailScreen';
 
 import type {
     AppStackParamList,
@@ -45,6 +47,8 @@ const AppNavigator: React.FC = () => {
             <AppStack.Screen name="Home" component={HomeScreen} />
             <AppStack.Screen name="DoctorList" component={DoctorListScreen} />
             <AppStack.Screen name="DoctorDetail" component={DoctorDetailScreen} />
+            <AppStack.Screen name="AppointmentList" component={AppointmentListScreen} />
+            <AppStack.Screen name="AppointmentDetail" component={AppointmentDetailScreen} />
         </AppStack.Navigator>
     );
 };
