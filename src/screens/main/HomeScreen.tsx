@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import DoctorDashboardScreen from './DoctorDashboardScreen';
 import PatientDashboardScreen from './PatientDashboardScreen';
+import type { AppStackParamList } from '../../navigation/navigation.types';
 
 const HomeScreen: React.FC = () => {
     const { userInfo, logout } = useAuth();
+    const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+
+    const handleNavigateToDoctorList = useCallback(() => {
+        navigation.navigate('DoctorList');
+    }, [navigation]);
 
     if (!userInfo) {
         return (
@@ -28,7 +36,7 @@ const HomeScreen: React.FC = () => {
     }
 
     if (userInfo.role === 'PATIENT') {
-        return <PatientDashboardScreen />;
+        return <PatientDashboardScreen onNavigateToDoctorList={handleNavigateToDoctorList} />;
     }
 
     return (

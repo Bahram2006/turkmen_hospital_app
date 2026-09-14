@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AppStackParamList } from '../../navigation/navigation.types';
 
 // ==========================================
 // TYPES
@@ -170,6 +173,7 @@ const STATUS_THEME: Record<AppointmentStatus, StatusTheme> = {
 
 const PatientDashboardScreen: React.FC = () => {
     const { userInfo } = useAuth();
+    const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
     const patientName = userInfo?.fullName ?? 'Patient';
 
