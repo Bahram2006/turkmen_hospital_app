@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { SecureStorage } from '../utils/secure-storage';
+import { authEvents } from '../services/auth-events';
 import { getToken, getUser, saveToken, saveUser, removeToken, removeUser } from '../utils/auth.storage';
 
 // ==========================================
@@ -32,7 +34,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // Auto-restore session on app startup
+    // Logout Method
+    const logout = useCallback(async () => {
+        try {
+            await removeToken();
+            await removeUser();
+            // Fallback to SecureStorage helper just in case
+            await SecureStorage.removeToken();
+            setUserToken(null);
+            setUserInfo(null);
+        } catch (e) {
+            console.error('Failed to clear auth session:', e);
+        }
+    }, []);
+
+    // Auto-restore session on app startup & Listen for 401 Unauthorized events
     useEffect(() => {
         const bootstrapAsync = async () => {
             try {
@@ -51,30 +67,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         bootstrapAsync();
-    }, []);
+
+        // Subscribe to global 401 Unauthorized events from Axios Interceptor
+        const unsubscribe = authEvents.subscribe(async () => {
+            console.log('[AuthContext] Received UNAUTHORIZED event. Logging out...');
+            await logout();
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, [logout]);
 
     // Login Method
     const login = useCallback(async (token: string, user: UserInfo) => {
         try {
             await saveToken(token);
             await saveUser(user);
+            await SecureStorage.saveToken(token);
             setUserToken(token);
             setUserInfo(user);
         } catch (e) {
             console.error('Failed to save auth session:', e);
             throw new Error('Login failed');
-        }
-    }, []);
-
-    // Logout Method
-    const logout = useCallback(async () => {
-        try {
-            await removeToken();
-            await removeUser();
-            setUserToken(null);
-            setUserInfo(null);
-        } catch (e) {
-            console.error('Failed to clear auth session:', e);
         }
     }, []);
 
