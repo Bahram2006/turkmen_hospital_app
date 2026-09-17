@@ -43,22 +43,37 @@ export type ClinikAxiosError = AxiosError<ApiErrorResponse>;
 // CONFIGURATION
 // ==========================================
 
-// Safely extract base URL from Expo Config (app.json/app.config.ts)
-// Falls back to localhost for iOS/Android simulators if not defined
+const getEnvVariable = (key: string): string | undefined => {
+    try {
+        // @ts-ignore - process.env is injected by Expo/Babel at build time
+        return process.env[key];
+    } catch (error) {
+        return undefined;
+    }
+};
+
+// Safely extract base URL from Expo Config or environment
 const getBaseUrl = (): string => {
-    const envUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
+    const envUrl = getEnvVariable('EXPO_PUBLIC_API_URL') || Constants.expoConfig?.extra?.apiUrl;
 
-    if (envUrl) return envUrl;
+    if (envUrl) {
+        return envUrl;
+    }
 
-    // Fallback for local development
-    // Note: Use your machine's local IP address instead of localhost for physical devices
-    return __DEV__ ? 'http://localhost:3000' : 'https://api.clinik.com';
+    // Fallback for local development based on platform
+    if (__DEV__) {
+        // Android emulator requires 10.0.2.2, iOS simulator or web can use localhost
+        return 'http://localhost:3000';
+    }
+
+    return 'https://api.clinik.com';
 };
 
 // ==========================================
 // AXIOS INSTANCE
 // ==========================================
 
+// 'export' sözüni aýyrdyk, diňe const api boldy
 const api: AxiosInstance = axios.create({
     baseURL: getBaseUrl(),
     timeout: 15000, // 15 seconds timeout
