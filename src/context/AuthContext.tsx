@@ -1,116 +1,150 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { SecureStorage } from '../utils/secure-storage';
+import React, { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
+import { apiClient } from '../services/api';
 import { authEvents } from '../services/auth-events';
-import { getToken, getUser, saveToken, saveUser, removeToken, removeUser } from '../utils/auth.storage';
+import { SecureStorage } from '../utils/secure-storage';
+import type { AuthState, User, LoginCredentials, AuthResponse } from '../types/auth.types';
+
 
 // ==========================================
-// INTERFACES
+// CONTEXT & REDUCER SETUP
 // ==========================================
 
-export interface UserInfo {
-    id: string;
-    fullName: string;
-    email: string;
-    role: 'PATIENT' | 'DOCTOR' | 'ADMIN';
-}
-
-interface AuthContextData {
-    userToken: string | null;
-    userInfo: UserInfo | null;
-    isLoading: boolean;
-    login: (token: string, user: UserInfo) => Promise<void>;
+interface AuthContextType extends AuthState {
+    login: (credentials: LoginCredentials) => Promise<void>;
     logout: () => Promise<void>;
 }
 
-// ==========================================
-// CONTEXT SETUP
-// ==========================================
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AuthContext = createContext<AuthContextData | undefined>(undefined);
+type AuthAction =
+    | { type: 'INIT_START' }
+    | { type: 'INIT_SUCCESS'; payload: User }
+    | { type: 'INIT_FAILURE' }
+    | { type: 'LOGIN_START' }
+    | { type: 'LOGIN_SUCCESS'; payload: User }
+    | { type: 'LOGOUT' };
+
+const initialState: AuthState = {
+    user: null,
+    isAuthenticated: false,
+    isLoading: true, // Start as true to show splash/loading on app boot
+};
+
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+    switch (action.type) {
+        case 'INIT_START':
+        case 'LOGIN_START':
+            return { ...state, isLoading: true };
+        case 'INIT_SUCCESS':
+        case 'LOGIN_SUCCESS':
+            return { user: action.payload, isAuthenticated: true, isLoading: false };
+        case 'INIT_FAILURE':
+        case 'LOGOUT':
+            return { user: null, isAuthenticated: false, isLoading: false };
+        default:
+            return state;
+    }
+};
+
+// ==========================================
+// PROVIDER COMPONENT
+// ==========================================
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [userToken, setUserToken] = useState<string | null>(null);
-    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [state, dispatch] = useReducer(authReducer, initialState);
 
-    // Logout Method
+    /**
+     * Verifies if a valid token exists on app startup.
+     * If yes, fetches the user profile to ensure the token hasn't been revoked.
+     */
+    const initializeAuth = useCallback(async () => {
+        dispatch({ type: 'INIT_START' });
+        try {
+            const token = await SecureStorage.getToken();
+
+            if (!token) {
+                dispatch({ type: 'INIT_FAILURE' });
+                return;
+            }
+
+            // Verify token validity by fetching current user profile
+            // Our Axios interceptor will automatically attach the Bearer token
+            const response = await apiClient.get<User>('/auth/me');
+
+            if (response.data.data) {
+                dispatch({ type: 'INIT_SUCCESS', payload: response.data.data });
+            } else {
+                throw new Error('Invalid user data');
+            }
+        } catch (error) {
+            // Token expired or invalid, clear storage
+            await SecureStorage.removeToken();
+            dispatch({ type: 'INIT_FAILURE' });
+        }
+    }, []);
+
+    /**
+     * Global Logout Handler
+     * Triggered manually via UI or automatically via 401 EventEmitter
+     */
     const logout = useCallback(async () => {
         try {
-            await removeToken();
-            await removeUser();
-            // Fallback to SecureStorage helper just in case
-            await SecureStorage.removeToken();
-            setUserToken(null);
-            setUserInfo(null);
+            // Optional: Call backend to invalidate refresh token
+            // await apiClient.post('/auth/logout');
         } catch (e) {
-            console.error('Failed to clear auth session:', e);
+            // Ignore errors during logout API call
+        } finally {
+            await SecureStorage.removeToken();
+            dispatch({ type: 'LOGOUT' });
         }
     }, []);
 
-    // Auto-restore session on app startup & Listen for 401 Unauthorized events
+    /**
+     * Login Handler
+     */
+    const login = useCallback(async (credentials: LoginCredentials) => {
+        dispatch({ type: 'LOGIN_START' });
+        try {
+            const response = await apiClient.post<AuthResponse['data']>('/auth/login', credentials);
+            const { accessToken, user } = response.data.data;
+
+            await SecureStorage.saveToken(accessToken);
+            dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+        } catch (error: any) {
+            dispatch({ type: 'INIT_FAILURE' }); // Revert to unauthenticated state
+            // Throw error so the UI layer can display the specific message
+            throw new Error(error.message || 'Login failed. Please check your credentials.');
+        }
+    }, []);
+
+    // ==========================================
+    // LIFECYCLE & EVENT LISTENERS
+    // ==========================================
+
     useEffect(() => {
-        const bootstrapAsync = async () => {
-            try {
-                const storedToken = await getToken();
-                const storedUser = await getUser();
+        initializeAuth();
 
-                if (storedToken && storedUser) {
-                    setUserToken(storedToken);
-                    setUserInfo(storedUser);
-                }
-            } catch (e) {
-                console.error('Failed to restore auth session:', e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        bootstrapAsync();
-
-        // Subscribe to global 401 Unauthorized events from Axios Interceptor
-        const unsubscribe = authEvents.subscribe(async () => {
-            console.log('[AuthContext] Received UNAUTHORIZED event. Logging out...');
-            await logout();
+        // Subscribe to global 401 Unauthorized events from Axios interceptor
+        const unsubscribe = authEvents.subscribe(() => {
+            console.warn('[AuthContext] Received 401 event. Forcing logout...');
+            logout();
         });
 
-        return () => {
-            unsubscribe();
-        };
-    }, [logout]);
-
-    // Login Method
-    const login = useCallback(async (token: string, user: UserInfo) => {
-        try {
-            await saveToken(token);
-            await saveUser(user);
-            await SecureStorage.saveToken(token);
-            setUserToken(token);
-            setUserInfo(user);
-        } catch (e) {
-            console.error('Failed to save auth session:', e);
-            throw new Error('Login failed');
-        }
-    }, []);
-
-    // Render loading splash while checking SecureStore
-    if (isLoading) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-                <ActivityIndicator size="large" color="#2563EB" />
-            </View>
-        );
-    }
+        return () => unsubscribe();
+    }, [initializeAuth, logout]);
 
     return (
-        <AuthContext.Provider value={{ userToken, userInfo, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ ...state, login, logout }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-// Custom Hook for consuming context safely
-export const useAuth = (): AuthContextData => {
+// ==========================================
+// CUSTOM HOOK
+// ==========================================
+
+export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
